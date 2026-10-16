@@ -76,6 +76,7 @@ export function defaultSettings(): Settings {
     globalFriendsPlayingOverlay: false,
     globalFriendsPlayingOverlayRecent: false,
     globalDedupeByName: false,
+    globalHideSteamHidden: false,
     shelves: [],
     smartShelvesEnabled: false,
     smartShelvesAtBottom: false,

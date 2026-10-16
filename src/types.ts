@@ -611,6 +611,7 @@ export const SettingsSchema = z.object({
   globalHideSeeMore: z.boolean().default(false),
   globalHideRefreshCard: z.boolean().default(false),
   globalDedupeByName: z.boolean().default(false),
+  globalHideSteamHidden: z.boolean().default(false),
   globalHeroEnabled: z.boolean().default(false),
   // Global default for "show game info above the cards" (per-shelf can override).
   globalGameInfoAbove: z.boolean().default(false),

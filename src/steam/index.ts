@@ -3963,6 +3963,36 @@ async function resolveViaV3Extension(
   } catch { return []; /* fall through to empty */ }
 }
 
+function groupWantsHidden(g: any): boolean {
+  return Array.isArray(g?.items) && g.items.some((i: any) =>
+    i?.type === "hidden" && (i.params?.mode ?? "exclude") === (i.inverted ? "exclude" : "only"));
+}
+
+function filterWantsHidden(f: any): boolean {
+  return f?.hidden === "only" || f?.hidden === true || groupWantsHidden(f?.filterGroup);
+}
+
+const SOURCE_WANTS_HIDDEN: Record<string, (source: any) => boolean> = {
+  tab: (s) => tabIdFromPath(String(s.tab ?? "")) === "hidden",
+  composite: (s) => Array.isArray(s.sources) && s.sources.some(targetsSteamHidden),
+};
+
+// A shelf built to show hidden games (Hidden tab, "hidden only" filter) keeps them.
+export function targetsSteamHidden(source: any): boolean {
+  if (!source) return false;
+  const byType = SOURCE_WANTS_HIDDEN[source.type];
+  if (byType) return byType(source);
+  return filterWantsHidden(source.filter) || groupWantsHidden(source.childFilter);
+}
+
+async function shouldHideSteamHidden(source: any): Promise<boolean> {
+  try {
+    const { getCurrentSettings } = await import("../store/settingsStore");
+    if ((getCurrentSettings() as any)?.globalHideSteamHidden !== true) return false;
+  } catch { return false; }
+  return !targetsSteamHidden(source);
+}
+
 export async function resolveShelfAppIds(
   source: { type: string; [k: string]: any },
   limit: number,
@@ -3973,8 +4003,6 @@ export async function resolveShelfAppIds(
   _depth: number = 0,
 ): Promise<number[]> {
   const { hiddenAppIds, dedupeByName, onResolveTotal } = options ?? {};
-  const hiddenSet = hiddenAppIds?.length ? new Set(hiddenAppIds) : undefined;
-  const overShootLimit = computeOvershootLimit(source, limit, hiddenSet);
 
   let all = await getAllAppOverviews();
   // Startup readiness: if Steam hasn't loaded app data yet, retry once after a short delay
@@ -3982,6 +4010,18 @@ export async function resolveShelfAppIds(
     await new Promise((r) => setTimeout(r, 2000));
     all = await getAllAppOverviews();
   }
+
+  let hiddenSet = hiddenAppIds?.length ? new Set(hiddenAppIds) : undefined;
+  if (await shouldHideSteamHidden(source)) {
+    // Pool-derived sources (filters, tabs, smart) never see them; id-list
+    // sources (collections, tab stores) drop them in `finish`.
+    const steamHidden = all.filter(isHiddenOf);
+    if (steamHidden.length) {
+      all = all.filter((a) => !isHiddenOf(a));
+      hiddenSet = new Set([...(hiddenSet ?? []), ...steamHidden.map((a) => appIdOf(a))]);
+    }
+  }
+  const overShootLimit = computeOvershootLimit(source, limit, hiddenSet);
 
   const finish = (ids: number[]): number[] => {
     let result = ids;

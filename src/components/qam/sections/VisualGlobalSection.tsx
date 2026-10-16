@@ -119,6 +119,7 @@ export function VisualGlobalSection({ controller, hidden, isHid, lightMode, moun
         {!isHid('globalHideSeeMore') && <ToggleField label={t('hide_see_more_card')} checked={settings.globalHideSeeMore === true} disabled={mountCrashed} onChange={(value: boolean) => actions.setGlobalHideSeeMore(value)} />}
         {!isHid('globalHideRefreshCard') && <ToggleField label={t('hide_refresh_card')} checked={settings.globalHideRefreshCard === true} disabled={mountCrashed} onChange={(value: boolean) => actions.setGlobalHideRefreshCard(value)} />}
         {!isHid('globalDedupeByName') && <ToggleField label={t('global_dedupe_by_name' as any)} checked={(settings as any).globalDedupeByName === true} disabled={mountCrashed} onChange={(value: boolean) => (actions as any).setGlobalDedupeByName(value)} />}
+        {!isHid('globalHideSteamHidden') && <ToggleField label={t('global_hide_steam_hidden' as any)} checked={(settings as any).globalHideSteamHidden === true} disabled={mountCrashed} onChange={(value: boolean) => (actions as any).setGlobalHideSteamHidden(value)} />}
         </>))()}
         {(() => (<>
         {!lightMode && !isHid('globalHeroEnabled') && <ToggleField label={t('global_hero_enabled' as any)} checked={(settings as any).globalHeroEnabled === true} disabled={mountCrashed} onChange={(value: boolean) => void (actions as any).setGlobalHeroEnabled(value)} />}

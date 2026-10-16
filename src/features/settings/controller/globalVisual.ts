@@ -62,5 +62,6 @@ export function createGlobalVisualActions(deps: GlobalVisualDeps) {
     setGlobalHideRefreshCard: (v: boolean) => setBool("globalHideRefreshCard", v),
     setGlobalHideNonSteamBadge: (v: boolean) => setBool("globalHideNonSteamBadge", v),
     setGlobalDedupeByName: (v: boolean) => setBool("globalDedupeByName" as any, v),
+    setGlobalHideSteamHidden: (v: boolean) => setBool("globalHideSteamHidden" as any, v),
   };
 }

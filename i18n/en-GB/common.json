@@ -29,6 +29,7 @@
   "force_themes_label": "Force CSS Loader themes (experimental)",
   "game_name_position_label": "Game name position",
   "global_dedupe_by_name": "Deduplicate by name",
+  "global_hide_steam_hidden": "Hide games hidden in Steam",
   "global_hero_enabled": "Background art on all shelves",
   "hero_enabled_label": "Enable hero art",
   "limit": "Game limit",
