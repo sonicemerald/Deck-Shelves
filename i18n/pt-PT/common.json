@@ -29,7 +29,7 @@
   "force_themes_label": "Forçar temas do CSS Loader (experimental)",
   "game_name_position_label": "Posição do nome do jogo",
   "global_dedupe_by_name": "Desduplicar por nome",
-  "global_hide_steam_hidden": "Ocultar jogos ocultos na Steam",
+  "global_hide_steam_hidden": "Ocultar jogos ocultos e privados da Steam",
   "global_hero_enabled": "Arte de fundo em todas as prateleiras",
   "hero_enabled_label": "Ativar hero art",
   "limit": "Limite de jogos",

@@ -3963,6 +3963,35 @@ async function resolveViaV3Extension(
   } catch { return []; /* fall through to empty */ }
 }
 
+// Steam's UI caches its "Mark as Private" list in localStorage as `PrivateApps_<accountid>`
+// (JSON appid array); app overviews carry no private flag.
+// shortcut: unions every account cached on this device, filter by the current accountid if multi-account Decks matter.
+function getPrivateAppIds(): Set<number> {
+  const out = new Set<number>();
+  try {
+    const ls = getPreferredSteamWindow().localStorage;
+    for (let i = 0; i < ls.length; i++) {
+      const key = ls.key(i);
+      if (!key?.startsWith("PrivateApps_")) continue;
+      const ids = JSON.parse(ls.getItem(key) ?? "[]");
+      if (Array.isArray(ids)) for (const id of ids) if (Number.isFinite(Number(id))) out.add(Number(id));
+    }
+  } catch { /* storage unavailable — treat as no private apps */ }
+  return out;
+}
+
+// Pool-derived sources (filters, tabs, smart) never see them; id-list
+// sources (collections, tab stores) drop them in `finish` via hiddenSet.
+function excludeSteamHidden(all: AppOverview[], hiddenSet: Set<number> | undefined): { all: AppOverview[]; hiddenSet: Set<number> | undefined } {
+  const excluded = getPrivateAppIds();
+  for (const a of all) if (isHiddenOf(a)) excluded.add(appIdOf(a));
+  if (!excluded.size) return { all, hiddenSet };
+  return {
+    all: all.filter((a) => !excluded.has(appIdOf(a))),
+    hiddenSet: new Set([...(hiddenSet ?? []), ...excluded]),
+  };
+}
+
 function groupWantsHidden(g: any): boolean {
   return Array.isArray(g?.items) && g.items.some((i: any) =>
     i?.type === "hidden" && (i.params?.mode ?? "exclude") === (i.inverted ? "exclude" : "only"));
@@ -4012,15 +4041,7 @@ export async function resolveShelfAppIds(
   }
 
   let hiddenSet = hiddenAppIds?.length ? new Set(hiddenAppIds) : undefined;
-  if (await shouldHideSteamHidden(source)) {
-    // Pool-derived sources (filters, tabs, smart) never see them; id-list
-    // sources (collections, tab stores) drop them in `finish`.
-    const steamHidden = all.filter(isHiddenOf);
-    if (steamHidden.length) {
-      all = all.filter((a) => !isHiddenOf(a));
-      hiddenSet = new Set([...(hiddenSet ?? []), ...steamHidden.map((a) => appIdOf(a))]);
-    }
-  }
+  if (await shouldHideSteamHidden(source)) ({ all, hiddenSet } = excludeSteamHidden(all, hiddenSet));
   const overShootLimit = computeOvershootLimit(source, limit, hiddenSet);
 
   const finish = (ids: number[]): number[] => {

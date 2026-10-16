@@ -33,6 +33,14 @@ describe('globalHideSteamHidden', () => {
     expect(await resolve({ type: 'filter', filter: { sort: 'alphabetical' } })).toEqual([1, 4])
   })
 
+  it('drops games marked private in Steam when the setting is on', async () => {
+    settings.current = { globalHideSteamHidden: true }
+    localStorage.setItem('PrivateApps_123', JSON.stringify([4]))
+    try {
+      expect(await resolve({ type: 'filter', filter: { sort: 'alphabetical' } })).toEqual([1])
+    } finally { localStorage.removeItem('PrivateApps_123') }
+  })
+
   it('still shows hidden games on a shelf built to show them', async () => {
     settings.current = { globalHideSteamHidden: true }
     expect(await resolve({ type: 'filter', filter: { hidden: 'only' } })).toEqual([2, 3])
