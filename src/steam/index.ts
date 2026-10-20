@@ -3963,21 +3963,33 @@ async function resolveViaV3Extension(
   } catch { return []; /* fall through to empty */ }
 }
 
-// Steam's UI caches its "Mark as Private" list in localStorage as `PrivateApps_<accountid>`
-// (JSON appid array); app overviews carry no private flag.
-// shortcut: unions every account cached on this device, filter by the current accountid if multi-account Decks matter.
+// App overviews carry no private flag; Steam keeps its "Mark as Private" list only in the
+// UI's React Query cache (key ["AccountPrivateApps"], a Set of appids). Every Steam window
+// shares one QueryClient, reachable by walking up from any rendered element's fiber.
+const fiberKeyOf = (e: any): string | undefined => Object.keys(e).find((k) => k.startsWith("__reactFiber$"));
+
+const queryClientOf = (f: any): any => (typeof f?.memoizedProps?.client?.getQueryData === "function" ? f.memoizedProps.client : null);
+
+function queryClientIn(w: any): any {
+  const el: any = Array.from(w?.document?.querySelectorAll?.("body *") ?? []).find(fiberKeyOf);
+  for (let f = el ? el[fiberKeyOf(el)!] : null; f; f = f.return) if (queryClientOf(f)) return queryClientOf(f);
+  return null;
+}
+
+let steamQueryClient: any = null;
+function findSteamQueryClient(): any {
+  for (const w of steamQueryClient ? [] : getSteamWindows()) {
+    steamQueryClient = queryClientIn(w);
+    if (steamQueryClient) break;
+  }
+  return steamQueryClient;
+}
+
 function getPrivateAppIds(): Set<number> {
-  const out = new Set<number>();
   try {
-    const ls = getPreferredSteamWindow().localStorage;
-    for (let i = 0; i < ls.length; i++) {
-      const key = ls.key(i);
-      if (!key?.startsWith("PrivateApps_")) continue;
-      const ids = JSON.parse(ls.getItem(key) ?? "[]");
-      if (Array.isArray(ids)) for (const id of ids) if (Number.isFinite(Number(id))) out.add(Number(id));
-    }
-  } catch { /* storage unavailable — treat as no private apps */ }
-  return out;
+    const ids = findSteamQueryClient()?.getQueryData(["AccountPrivateApps"]);
+    return new Set(ids ? Array.from(ids as Iterable<number>) : []);
+  } catch { return new Set(); /* Steam internals changed — treat as no private apps */ }
 }
 
 // Pool-derived sources (filters, tabs, smart) never see them; id-list

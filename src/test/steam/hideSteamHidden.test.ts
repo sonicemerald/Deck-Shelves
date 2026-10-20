@@ -35,10 +35,14 @@ describe('globalHideSteamHidden', () => {
 
   it('drops games marked private in Steam when the setting is on', async () => {
     settings.current = { globalHideSteamHidden: true }
-    localStorage.setItem('PrivateApps_123', JSON.stringify([4]))
+    // Mimic Steam's UI: a rendered element whose fiber ancestor is the QueryClientProvider.
+    const el = document.createElement('div')
+    const client = { getQueryData: (k: string[]) => (k[0] === 'AccountPrivateApps' ? new Set([4]) : undefined) }
+    ;(el as any).__reactFiber$test = { memoizedProps: {}, return: { memoizedProps: { client } } }
+    document.body.appendChild(el)
     try {
       expect(await resolve({ type: 'filter', filter: { sort: 'alphabetical' } })).toEqual([1])
-    } finally { localStorage.removeItem('PrivateApps_123') }
+    } finally { el.remove() }
   })
 
   it('still shows hidden games on a shelf built to show them', async () => {
